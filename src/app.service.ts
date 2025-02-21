@@ -1,4 +1,5 @@
 import { Injectable, HttpException, Logger } from '@nestjs/common';
+import { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import {
@@ -12,11 +13,37 @@ const abiEncoder = AbiCoder.defaultAbiCoder();
 
 @Injectable()
 export class AppService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(private readonly httpService: HttpService) {
+    this.httpService.axiosRef.interceptors.request.use(
+      (config: InternalAxiosRequestConfig) => {
+        config.headers['request-startTime'] = Date.now();
+        config.headers['request-url'] = config.url || 'unknown';
+        return config;
+      },
+    );
+
+    this.httpService.axiosRef.interceptors.response.use(
+      (response: AxiosResponse) => {
+        const startTime = response.config.headers['request-startTime'];
+        const duration = Date.now() - startTime;
+        const url = response.config.headers['request-url'];
+        this.logger.log(`Response time for ${url}: ${duration}ms`);
+        return response;
+      },
+      (error) => {
+        if (error.config?.headers['request-startTime']) {
+          const startTime = error.config.headers['request-startTime'];
+          const duration = Date.now() - startTime;
+          const url = error.config.headers['request-url'] || 'unknown';
+          this.logger.error(`Response error for ${url} after ${duration}ms`);
+        }
+        return Promise.reject(error);
+      },
+    );
+  }
   private readonly logger = new Logger(AppService.name);
   async getQuote(input: any): Promise<any> {
     try {
-      // const input = quoteData[1];
       const url = 'https://api-beta.pathfinder.routerprotocol.com/api/v2/quote';
       const params = {
         fromTokenAddress: input.sourceToken,
@@ -64,7 +91,6 @@ export class AppService {
     }
   }
 
-
   async overrideApproval(
     tokenAddr: string,
     ownerAddr: string,
@@ -84,9 +110,7 @@ export class AppService {
     );
   }
 
-  /**
-   * Compute the storage slot for the allowance mapping.
-   */
+ 
   getAllowanceSlot(ownerAddr: string, spender: string, mappingSlot: number) {
     const ownerHash = keccak256(
       abiEncoder.encode(['address', 'uint256'], [ownerAddr, mappingSlot]),
@@ -96,9 +120,7 @@ export class AppService {
     );
   }
 
-  /**
-   * Override the balance for a given account.
-   */
+ 
   async overrideBalance(
     tokenAddr: string,
     userAddr: string,
@@ -115,13 +137,9 @@ export class AppService {
     this.logger.verbose(`Balance overridden to ${newBalance}`);
   }
 
-  /**
-   * Compute the storage slot for the balance mapping.
-   */
   getBalanceSlot(userAddr: string, mappingSlot: number) {
     return keccak256(
       abiEncoder.encode(['address', 'uint256'], [userAddr, mappingSlot]),
     );
   }
-
 }
