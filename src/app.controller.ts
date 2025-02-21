@@ -14,26 +14,30 @@ export class AppController {
 
   @Get()
   async getSimulation(): Promise<string> {
-    //calculate the time taken for quote and transaction APIs
     try {
-      for (const input of inputs) {
+      const sortedData = inputs.sort(
+        (a, b) => Number(a.sourceChain) - Number(b.sourceChain),
+      );
+
+
+      for (const input of sortedData) {
         const sourceChain = input.sourceChain;
         const provider: JsonRpcProvider =
           await this.anvilManager.manage(sourceChain);
         this.logger.log(provider);
-        const quoteData = await this.appService.getQuote(input);
+        const quoteData: any = await this.appService.getQuote(input);
         // await new Promise((resolve) => setTimeout(resolve, 2000));
         const accounts = await provider.listAccounts();
         // console.log('List of accounts:', accounts);
 
-        const owner = accounts[0].address;
-        this.logger.log(`quoteData`);
+        const owner: string = accounts[0].address;
+        // this.logger.log(`quoteData`);
         const transactionData = await this.appService.getTransaction(
           quoteData,
           owner,
         );
-        const tokenAddr = transactionData.fromTokenAddress;
-        const spender = transactionData.allowanceTo;
+        const tokenAddr: string = transactionData.fromTokenAddress;
+        const spender: string = transactionData.allowanceTo;
 
         await this.appService.overrideApproval(
           tokenAddr,
@@ -42,7 +46,6 @@ export class AppController {
           '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
           provider,
         );
-        //override the balance check
         await this.appService.overrideBalance(
           tokenAddr,
           owner,
@@ -50,7 +53,6 @@ export class AppController {
           provider,
         );
 
-        // const tx = transactionData.txn;
         const tx = {
           from: transactionData.txn.from,
           to: transactionData.txn.to,
@@ -59,7 +61,6 @@ export class AppController {
           // gasLimit: transactionData.txn.gasLimit,
           // gasPrice: transactionData.txn.gasPrice,
         };
-        // console.log('Transaction to simulate:', tx);
         try {
           const result = await provider.call(tx);
           this.logger.log(`Simulation successful. Result: ${result}`);
@@ -67,7 +68,6 @@ export class AppController {
           this.logger.error(`Error caught in simulation ${err}`);
         }
 
-        //reset the approval
         await this.appService.overrideApproval(
           tokenAddr,
           owner,
@@ -75,7 +75,6 @@ export class AppController {
           '0x00',
           provider,
         );
-        //reset the balance check
         await this.appService.overrideBalance(
           tokenAddr,
           owner,
@@ -86,7 +85,7 @@ export class AppController {
     } catch (err) {
       this.logger.error(`error caught in main controller`, err);
     } finally {
-      this.anvilManager.stopAnvil();
+      await this.anvilManager.stopAnvil();
     }
     return 'hello world';
   }
