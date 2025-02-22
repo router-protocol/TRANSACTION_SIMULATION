@@ -3,35 +3,34 @@ import { startAnvil } from '@brinkninja/node-anvil';
 import rpcFile from '../config/rpcs.json';
 import { JsonRpcProvider } from 'ethers';
 
-let currentSourceChain: any;
-let anvilInstance: any;
-let provider: any;
-
 @Injectable()
 export class AnvilManagerService {
   constructor() {}
   private readonly logger = new Logger(AnvilManagerService.name);
+  private currentSourceChain: string;
+  private anvilInstance: any;
+  private provider: JsonRpcProvider;
   async manage(sourceChain: string): Promise<JsonRpcProvider> {
-    if (currentSourceChain === sourceChain) {
+    if (this.currentSourceChain === sourceChain) {
       this.logger.verbose('Same chain');
-      return provider;
+      return this.provider;
     } else {
       this.logger.verbose('Different chain');
-      currentSourceChain = sourceChain;
-      if (anvilInstance) {
+      this.currentSourceChain = sourceChain;
+      if (this.anvilInstance) {
         this.logger.log('stopping anvil');
         await this.stopAnvil();
       }
 
-      this.logger.log(`starting anvil for chain: ${currentSourceChain}`);
-      anvilInstance = await this.startAnvil(currentSourceChain);
-      provider = await this.getProvider();
-      return provider;
+      this.logger.log(`starting anvil for chain: ${this.currentSourceChain}`);
+      this.anvilInstance = await this.startAnvil(this.currentSourceChain);
+      this.provider = await this.getProvider();
+      return this.provider;
     }
   }
   async stopAnvil(): Promise<void> {
     try {
-      await anvilInstance.kill();
+      await this.anvilInstance.kill();
       this.logger.verbose('Anvil process stopped.');
     } catch (killError) {
       this.logger.error('Error stopping Anvil:', killError);
@@ -47,11 +46,10 @@ export class AnvilManagerService {
     }
     const rpcs = rpcsForChain.rpcs;
 
- 
-    let anvilInstance: any;
+    // let anvilInstance: any;
     for (const rpc of rpcs) {
       try {
-        anvilInstance = await startAnvil({
+        this.anvilInstance = await startAnvil({
           port: 8545,
           forkUrl: rpc,
           chainId: sourceChainId,
@@ -60,7 +58,7 @@ export class AnvilManagerService {
         this.logger.verbose(
           `Anvil started on port 8545 for chainId ${sourceChainId} using RPC ${rpc}`,
         );
-        return anvilInstance;
+        return this.anvilInstance;
       } catch (error) {
         this.logger.error('Error starting Anvil:', error);
         continue;
@@ -68,7 +66,11 @@ export class AnvilManagerService {
     }
     throw new Error(`Could not start Anvil for chainId ${sourceChainId}`);
   }
-  getProvider(): any {
+  getProvider(): JsonRpcProvider {
     return new JsonRpcProvider(`http://localhost:8545`);
+  }
+  reset(): void {
+    this.currentSourceChain = '';
+    this.anvilInstance = null;
   }
 }

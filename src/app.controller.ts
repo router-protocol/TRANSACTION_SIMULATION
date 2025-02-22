@@ -86,6 +86,7 @@ export class AppController {
       this.logger.error(`error caught in main controller`, err);
     } finally {
       await this.anvilManager.stopAnvil();
+      this.anvilManager.reset();
     }
     return 'hello world';
   }
