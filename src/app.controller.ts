@@ -3,12 +3,14 @@ import { AppService } from './app.service';
 import { AnvilManagerService } from './anvil-manager/anvil-manager.service';
 import inputs from './config/customCombinations.json';
 import { JsonRpcProvider } from 'ethers';
+import { AllowanceService } from './allowance/allowance.service';
 
 @Controller()
 export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly anvilManager: AnvilManagerService,
+    private readonly allowanceService: AllowanceService,
   ) {}
   private readonly logger = new Logger(AppController.name);
 
@@ -19,19 +21,15 @@ export class AppController {
         (a, b) => Number(a.sourceChain) - Number(b.sourceChain),
       );
 
-
       for (const input of sortedData) {
         const sourceChain = input.sourceChain;
         const provider: JsonRpcProvider =
           await this.anvilManager.manage(sourceChain);
         this.logger.log(provider);
         const quoteData: any = await this.appService.getQuote(input);
-        // await new Promise((resolve) => setTimeout(resolve, 2000));
         const accounts = await provider.listAccounts();
-        // console.log('List of accounts:', accounts);
 
         const owner: string = accounts[0].address;
-        // this.logger.log(`quoteData`);
         const transactionData = await this.appService.getTransaction(
           quoteData,
           owner,
@@ -43,14 +41,32 @@ export class AppController {
           tokenAddr,
           owner,
           spender,
-          '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1',
           provider,
         );
+        this.logger.debug(
+          await this.allowanceService.getAllowance(
+            provider,
+            tokenAddr,
+            owner,
+            spender,
+          ),
+        );
+        let slotNumber = 9;
         await this.appService.overrideBalance(
           tokenAddr,
           owner,
-          '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1',
           provider,
+          slotNumber,
+        );
+        this.logger.debug(
+          `for slot ${slotNumber} balance is: ` +
+            (await this.allowanceService.getBalance(
+              provider,
+              tokenAddr,
+              owner,
+            )),
         );
 
         const tx = {
@@ -61,7 +77,16 @@ export class AppController {
           // gasLimit: transactionData.txn.gasLimit,
           // gasPrice: transactionData.txn.gasPrice,
         };
+        this.logger.debug(`Transaction data: ${JSON.stringify(tx)}`);
         try {
+          this.logger.debug(
+            await this.allowanceService.getAllowance(
+              provider,
+              tokenAddr,
+              owner,
+              spender,
+            ),
+          );
           const result = await provider.call(tx);
           this.logger.log(`Simulation successful. Result: ${result}`);
         } catch (err) {
@@ -75,11 +100,20 @@ export class AppController {
           '0x00',
           provider,
         );
+        this.logger.debug(
+          await this.allowanceService.getAllowance(
+            provider,
+            tokenAddr,
+            owner,
+            spender,
+          ),
+        );
         await this.appService.overrideBalance(
           tokenAddr,
           owner,
           '0x00',
           provider,
+          slotNumber,
         );
       }
     } catch (err) {

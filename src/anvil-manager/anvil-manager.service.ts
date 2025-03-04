@@ -67,7 +67,18 @@ export class AnvilManagerService {
     throw new Error(`Could not start Anvil for chainId ${sourceChainId}`);
   }
   getProvider(): JsonRpcProvider {
-    return new JsonRpcProvider(`http://localhost:8545`);
+    return new JsonRpcProvider(`http://localhost:8545`, undefined, {
+      // Disable request batching
+      batchMaxCount: 1,
+      // Assume network won't change (required for INFURA/Alchemy)
+      staticNetwork: true,
+      // Reduce batch aggregation time to minimum
+      batchStallTime: 0,
+      // Set smaller batch size (1kb) to prevent oversized requests
+      batchMaxSize: 1024,
+      // Disable built-in caching
+      cacheTimeout: -1,
+    });
   }
   reset(): void {
     this.currentSourceChain = '';
