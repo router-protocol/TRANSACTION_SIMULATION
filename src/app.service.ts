@@ -98,19 +98,16 @@ export class AppService {
     newAllowance: string,
     provider: JsonRpcProvider,
   ) {
-    const allowanceSlot = this.getAllowanceSlot(ownerAddr, spender, 1); // Assuming mapping is at slot 1
+    const allowanceSlot = this.getAllowanceSlot(ownerAddr, spender, 10);
     const formattedAllowance = zeroPadBytes(hexlify(newAllowance), 32);
     await provider.send('anvil_setStorageAt', [
       tokenAddr,
       allowanceSlot,
       formattedAllowance,
     ]);
-    this.logger.verbose(
-      `Approval overridden: ${spender} can now spend ${newAllowance} tokens from ${ownerAddr}`,
-    );
+    this.logger.verbose(`Approval overridden`);
   }
 
- 
   getAllowanceSlot(ownerAddr: string, spender: string, mappingSlot: number) {
     const ownerHash = keccak256(
       abiEncoder.encode(['address', 'uint256'], [ownerAddr, mappingSlot]),
@@ -120,21 +117,21 @@ export class AppService {
     );
   }
 
- 
   async overrideBalance(
     tokenAddr: string,
     userAddr: string,
     newBalance: string,
     provider: JsonRpcProvider,
+    slotNumber: number,
   ) {
-    const balanceSlot = this.getBalanceSlot(userAddr, 0); // Assuming balance mapping is at slot 0
+    const balanceSlot = this.getBalanceSlot(userAddr, slotNumber);
     const formattedBalance = zeroPadBytes(hexlify(newBalance), 32);
     await provider.send('anvil_setStorageAt', [
       tokenAddr,
       balanceSlot,
       formattedBalance,
     ]);
-    this.logger.verbose(`Balance overridden to ${newBalance}`);
+    this.logger.verbose(`Balance overridden`);
   }
 
   getBalanceSlot(userAddr: string, mappingSlot: number) {

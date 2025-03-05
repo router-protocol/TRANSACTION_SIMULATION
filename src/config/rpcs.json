@@ -49,17 +49,18 @@
     {
         "chainId": "8453",
         "rpcs": [
+            "https://1rpc.io/base",
             "https://base.meowrpc.com",
             "https://base.llamarpc.com",
-            "https://1rpc.io/base",
             "https://mainnet.base.org"
         ]
     },
     {
         "chainId": "137",
         "rpcs": [
-            "https://polygon-bor.publicnode.com",
             "https://polygon.meowrpc.com",
+            "https://polygon-bor.publicnode.com",
+            
             "https://rpc-mainnet.maticvigil.com",
             "https://rpc.ankr.com/polygon"
         ]
