@@ -9,6 +9,7 @@ import {
   keccak256,
   AbiCoder,
 } from 'ethers';
+import { getPathfinderData } from './utils/path';
 const abiEncoder = AbiCoder.defaultAbiCoder();
 
 @Injectable()
@@ -42,54 +43,13 @@ export class AppService {
     );
   }
   private readonly logger = new Logger(AppService.name);
-  async getQuote(input: any): Promise<any> {
-    try {
-      const url = 'https://api-beta.pathfinder.routerprotocol.com/api/v2/quote';
-      const params = {
-        fromTokenAddress: input.sourceToken,
-        toTokenAddress: input.destinationToken,
-        amount: input.amount,
-        fromTokenChainId: input.sourceChain,
-        toTokenChainId: input.destinationChain,
-        partnerId: `1`,
-        slippageTolerance: `1`,
-        destFuel: `0`,
-      };
-      const response = await lastValueFrom(
-        this.httpService.get(url, { params }),
-      );
-      return response.data;
-    } catch (error) {
-      throw new HttpException(error, 500);
-    }
-  }
-  async getTransaction(quoteData: any, owner: string): Promise<any> {
-    try {
-      const url =
-        'https://api-beta.pathfinder.routerprotocol.com/api/v2/transaction';
-      const data = {
-        ...quoteData,
-        receiverAddress: owner,
-        senderAddress: owner,
-        metaData: {
-          ataAddress: null,
-        },
-      };
-      const options = {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
 
-      const response = await lastValueFrom(
-        this.httpService.post(url, data, options),
-      );
-      return response.data;
-    } catch (error) {
-      this.logger.error(error);
-      throw new HttpException(error, 500);
-    }
+  async getPathfinderData(params: any): Promise<any> {
+    return getPathfinderData(params, this.httpService);
   }
+
+  
+
 
   async overrideApproval(
     tokenAddr: string,

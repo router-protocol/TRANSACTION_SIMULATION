@@ -26,14 +26,16 @@ export class AppController {
         const provider: JsonRpcProvider =
           await this.anvilManager.manage(sourceChain);
         this.logger.log(provider);
-        const quoteData: any = await this.appService.getQuote(input);
-        const accounts = await provider.listAccounts();
 
+        const accounts = await provider.listAccounts();
         const owner: string = accounts[0].address;
-        const transactionData = await this.appService.getTransaction(
-          quoteData,
-          owner,
-        );
+
+        // pf api
+        const transactionData = await this.appService.getPathfinderData({
+          ...input,
+          owner: owner
+        });
+
         const tokenAddr: string = transactionData.fromTokenAddress;
         const spender: string = transactionData.allowanceTo;
 
