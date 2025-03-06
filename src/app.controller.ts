@@ -13,6 +13,9 @@ export class AppController {
     private readonly allowanceService: AllowanceService,
   ) {}
   private readonly logger = new Logger(AppController.name);
+  private readonly maxOverrideValue =
+    '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1';
+  private readonly resetOverrideValue = '0x00';
 
   @Get()
   async getSimulation(): Promise<string> {
@@ -25,95 +28,31 @@ export class AppController {
         const sourceChain = input.sourceChain;
         const provider: JsonRpcProvider =
           await this.anvilManager.manage(sourceChain);
-        this.logger.log(provider);
-        const quoteData: any = await this.appService.getQuote(input);
+        // this.logger.log(provider);
+
         const accounts = await provider.listAccounts();
-
         const owner: string = accounts[0].address;
-        const transactionData = await this.appService.getTransaction(
-          quoteData,
-          owner,
-        );
-        const tokenAddr: string = transactionData.fromTokenAddress;
-        const spender: string = transactionData.allowanceTo;
 
-        await this.appService.overrideApproval(
-          tokenAddr,
-          owner,
-          spender,
-          '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1',
+        // pf api
+        const transactionData = await this.appService.getPathfinderData({
+          ...input,
+          owner: owner,
+        });
+
+        await this.appService.overrideApprovalAndBalance(
+          transactionData,
           provider,
-        );
-        this.logger.debug(
-          await this.allowanceService.getAllowance(
-            provider,
-            tokenAddr,
-            owner,
-            spender,
-          ),
-        );
-        let slotNumber = 9;
-        await this.appService.overrideBalance(
-          tokenAddr,
-          owner,
-          '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1',
-          provider,
-          slotNumber,
-        );
-        this.logger.debug(
-          `for slot ${slotNumber} balance is: ` +
-            (await this.allowanceService.getBalance(
-              provider,
-              tokenAddr,
-              owner,
-            )),
+          this.maxOverrideValue,
+          sourceChain,
         );
 
-        const tx = {
-          from: transactionData.txn.from,
-          to: transactionData.txn.to,
-          // value: transactionData.txn.value,
-          data: transactionData.txn.data,
-          // gasLimit: transactionData.txn.gasLimit,
-          // gasPrice: transactionData.txn.gasPrice,
-        };
-        this.logger.debug(`Transaction data: ${JSON.stringify(tx)}`);
-        try {
-          this.logger.debug(
-            await this.allowanceService.getAllowance(
-              provider,
-              tokenAddr,
-              owner,
-              spender,
-            ),
-          );
-          const result = await provider.call(tx);
-          this.logger.log(`Simulation successful. Result: ${result}`);
-        } catch (err) {
-          this.logger.error(`Error caught in simulation ${err}`);
-        }
+        await this.appService.simulateTransaction(transactionData, provider);
 
-        await this.appService.overrideApproval(
-          tokenAddr,
-          owner,
-          spender,
-          '0x00',
+        await this.appService.overrideApprovalAndBalance(
+          transactionData,
           provider,
-        );
-        this.logger.debug(
-          await this.allowanceService.getAllowance(
-            provider,
-            tokenAddr,
-            owner,
-            spender,
-          ),
-        );
-        await this.appService.overrideBalance(
-          tokenAddr,
-          owner,
-          '0x00',
-          provider,
-          slotNumber,
+          this.resetOverrideValue,
+          sourceChain,
         );
       }
     } catch (err) {

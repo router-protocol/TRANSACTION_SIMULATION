@@ -58,11 +58,10 @@
     {
         "chainId": "137",
         "rpcs": [
+            "https://rpc.ankr.com/polygon",
             "https://polygon.meowrpc.com",
             "https://polygon-bor.publicnode.com",
-            
-            "https://rpc-mainnet.maticvigil.com",
-            "https://rpc.ankr.com/polygon"
+            "https://rpc-mainnet.maticvigil.com"
         ]
     },
     {

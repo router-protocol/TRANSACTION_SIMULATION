@@ -1,6 +1,7 @@
 import { Injectable, HttpException, Logger } from '@nestjs/common';
 import { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { HttpService } from '@nestjs/axios';
+import { AllowanceService } from './allowance/allowance.service';
 import { lastValueFrom } from 'rxjs';
 import {
   JsonRpcProvider,
@@ -9,11 +10,17 @@ import {
   keccak256,
   AbiCoder,
 } from 'ethers';
+import { getPathfinderData } from './utils/path';
+import { overrideApproval, overrideBalance } from './utils/overrides';
+import { getTxnData } from './utils/txnData';
 const abiEncoder = AbiCoder.defaultAbiCoder();
 
 @Injectable()
 export class AppService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly allowanceService: AllowanceService,
+  ) {
     this.httpService.axiosRef.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         config.headers['request-startTime'] = Date.now();
@@ -42,101 +49,52 @@ export class AppService {
     );
   }
   private readonly logger = new Logger(AppService.name);
-  async getQuote(input: any): Promise<any> {
+
+  async getPathfinderData(params: any): Promise<any> {
+    return getPathfinderData(params, this.httpService);
+  }
+
+  async overrideApprovalAndBalance(
+    transactionData,
+    provider,
+    newValue,
+    chainId,
+  ) {
     try {
-      const url = 'https://api-beta.pathfinder.routerprotocol.com/api/v2/quote';
-      const params = {
-        fromTokenAddress: input.sourceToken,
-        toTokenAddress: input.destinationToken,
-        amount: input.amount,
-        fromTokenChainId: input.sourceChain,
-        toTokenChainId: input.destinationChain,
-        partnerId: `1`,
-        slippageTolerance: `1`,
-        destFuel: `0`,
-      };
-      const response = await lastValueFrom(
-        this.httpService.get(url, { params }),
+      const tokenAddr: string = transactionData.fromTokenAddress;
+      const owner: string = transactionData.txn.from;
+      const spender: string = transactionData.allowanceTo;
+      // const newAllowance: string =
+      //   '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1';
+      // const newBalance: string =
+      //   '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1';
+      await overrideApproval(
+        tokenAddr,
+        owner,
+        spender,
+        newValue,
+        provider,
+        chainId,
       );
-      return response.data;
-    } catch (error) {
-      throw new HttpException(error, 500);
+      await this.allowanceService.getAllowance(
+        provider,
+        tokenAddr,
+        owner,
+        spender,
+      );
+      await overrideBalance(tokenAddr, owner, newValue, provider, chainId);
+      await this.allowanceService.getBalance(provider, tokenAddr, owner);
+    } catch (e) {
+      this.logger.error(`error in overrideApprovalAndBalance: ${e}`);
     }
   }
-  async getTransaction(quoteData: any, owner: string): Promise<any> {
+  async simulateTransaction(transactionData: any, provider: JsonRpcProvider): Promise<void> {
     try {
-      const url =
-        'https://api-beta.pathfinder.routerprotocol.com/api/v2/transaction';
-      const data = {
-        ...quoteData,
-        receiverAddress: owner,
-        senderAddress: owner,
-        metaData: {
-          ataAddress: null,
-        },
-      };
-      const options = {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-
-      const response = await lastValueFrom(
-        this.httpService.post(url, data, options),
-      );
-      return response.data;
-    } catch (error) {
-      this.logger.error(error);
-      throw new HttpException(error, 500);
+      const txn = await getTxnData(transactionData);
+      const result = await provider.call(txn);
+      this.logger.log(`Simulation successful. Result: ${result}`);
+    } catch (err) {
+      this.logger.error(`Error caught in simulation ${err}`);
     }
-  }
-
-  async overrideApproval(
-    tokenAddr: string,
-    ownerAddr: string,
-    spender: string,
-    newAllowance: string,
-    provider: JsonRpcProvider,
-  ) {
-    const allowanceSlot = this.getAllowanceSlot(ownerAddr, spender, 10);
-    const formattedAllowance = zeroPadBytes(hexlify(newAllowance), 32);
-    await provider.send('anvil_setStorageAt', [
-      tokenAddr,
-      allowanceSlot,
-      formattedAllowance,
-    ]);
-    this.logger.verbose(`Approval overridden`);
-  }
-
-  getAllowanceSlot(ownerAddr: string, spender: string, mappingSlot: number) {
-    const ownerHash = keccak256(
-      abiEncoder.encode(['address', 'uint256'], [ownerAddr, mappingSlot]),
-    );
-    return keccak256(
-      abiEncoder.encode(['address', 'bytes32'], [spender, ownerHash]),
-    );
-  }
-
-  async overrideBalance(
-    tokenAddr: string,
-    userAddr: string,
-    newBalance: string,
-    provider: JsonRpcProvider,
-    slotNumber: number,
-  ) {
-    const balanceSlot = this.getBalanceSlot(userAddr, slotNumber);
-    const formattedBalance = zeroPadBytes(hexlify(newBalance), 32);
-    await provider.send('anvil_setStorageAt', [
-      tokenAddr,
-      balanceSlot,
-      formattedBalance,
-    ]);
-    this.logger.verbose(`Balance overridden`);
-  }
-
-  getBalanceSlot(userAddr: string, mappingSlot: number) {
-    return keccak256(
-      abiEncoder.encode(['address', 'uint256'], [userAddr, mappingSlot]),
-    );
   }
 }
