@@ -53,6 +53,12 @@ export async function getPathfinderData(requestParams: any, httpService: any) {
 
     return txResponse?.data;
   } catch (error) {
-    throw new HttpException(error, 500);
+    // throw new HttpException(
+    //   `${error.response.request._header}, ${JSON.stringify(error.response.data)}`,
+    //   error.status || 500,
+    // );
+    logger.error(
+      `${error.response.request._header}, ${JSON.stringify(error.response.data)}, ${error.status}`
+    );
   }
 }

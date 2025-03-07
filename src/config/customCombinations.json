@@ -1,37 +1,100 @@
 [
   {
     "sourceChain": "137",
-    "sourceToken": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+    "sourceToken": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
     "destinationChain": "10",
-    "destinationToken": "0x0b2c639c533813f4aa9d7837caf62653d097ff85",
+    "destinationToken": "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58",
     "amount": "10000000"
   },
   {
     "sourceChain": "137",
-    "sourceToken": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+    "sourceToken": "0x8f3cf7ad23cd3cadbd9735aff958023239c6a063",
     "destinationChain": "10",
-    "destinationToken": "0x0b2c639c533813f4aa9d7837caf62653d097ff85",
-    "amount": "10000000"
+    "destinationToken": "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1",
+    "amount": "10000000000000000000"
   },
   {
-    "sourceChain": "8453",
-    "sourceToken": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-    "destinationChain": "137",
-    "destinationToken": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
-    "amount": "10000000"
+    "sourceChain": "137",
+    "sourceToken": "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6",
+    "destinationChain": "10",
+    "destinationToken": "0x68f180fcce6836688e9084f035309e29bf0a2095",
+    "amount": "100000000000000"
   },
   {
-    "sourceChain": "10",
-    "sourceToken": "0x0b2c639c533813f4aa9d7837caf62653d097ff85",
-    "destinationChain": "137",
-    "destinationToken": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+    "sourceChain": "137",
+    "sourceToken": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
+    "destinationChain": "10",
+    "destinationToken": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "amount": "1000000000000000"
+  },
+  {
+    "sourceChain": "42161",
+    "sourceToken": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+    "destinationChain": "10",
+    "destinationToken": "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58",
     "amount": "10000000"
   },
   {
     "sourceChain": "42161",
-    "sourceToken": "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
-    "destinationChain": "137",
-    "destinationToken": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+    "sourceToken": "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1",
+    "destinationChain": "8453",
+    "destinationToken": "0x50c5725949a6f0c72e6c4a641f24049a917db0cb",
+    "amount": "1000000000000000000"
+  },
+  {
+    "sourceChain": "42161",
+    "sourceToken": "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
+    "destinationChain": "10",
+    "destinationToken": "0x68f180fcce6836688e9084f035309e29bf0a2095",
     "amount": "10000000"
+  },
+  {
+    "sourceChain": "42161",
+    "sourceToken": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "destinationChain": "8453",
+    "destinationToken": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "amount": "1000000000000000"
+  },
+  {
+    "sourceChain": "8453",
+    "sourceToken": "0x50c5725949a6f0c72e6c4a641f24049a917db0cb",
+    "destinationChain": "10",
+    "destinationToken": "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1",
+    "amount": "1000000000000000000"
+  },
+  {
+    "sourceChain": "8453",
+    "sourceToken": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "destinationChain": "137",
+    "destinationToken": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
+    "amount": "1000000000000000"
+  },
+  {
+    "sourceChain": "10",
+    "sourceToken": "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58",
+    "destinationChain": "42161",
+    "destinationToken": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+    "amount": "10000000"
+  },
+  {
+    "sourceChain": "10",
+    "sourceToken": "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1",
+    "destinationChain": "137",
+    "destinationToken": "0x8f3cf7ad23cd3cadbd9735aff958023239c6a063",
+    "amount": "100000000000000000000"
+  },
+  {
+    "sourceChain": "10",
+    "sourceToken": "0x68f180fcce6836688e9084f035309e29bf0a2095",
+    "destinationChain": "42161",
+    "destinationToken": "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
+    "amount": "10000000"
+  },
+  {
+    "sourceChain": "10",
+    "sourceToken": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "destinationChain": "8453",
+    "destinationToken": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "amount": "100000000000000000000"
   }
 ]
