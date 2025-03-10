@@ -13552,3 +13552,6 @@ export const tokens: {
     decimals: 9,
   },
 ];
+
+// all evm standard erc20 + native
+export const standardErc20Tokens = []

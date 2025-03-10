@@ -111,6 +111,9 @@ export class AppService {
     chainId,
   ) {
     try {
+
+      // if token is native skip approval @akshay. Use isNative() method
+
       const tokenAddr: string = transactionData.fromTokenAddress;
       const owner: string = transactionData.txn.from;
       const spender: string = transactionData.allowanceTo;
