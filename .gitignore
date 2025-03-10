@@ -6,6 +6,8 @@
 package-lock.json
 yarn.lock
 
+#reports
+/reports
 # Logs
 logs
 *.log

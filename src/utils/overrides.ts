@@ -19,6 +19,7 @@ export async function overrideApproval(
   newAllowance: string,
   provider: JsonRpcProvider,
   chainId: string,
+  retryCount: number = 3,
 ) {
   try {
     const slotNumber = getAllowanceSlotNumber(chainId, tokenAddr);
@@ -29,7 +30,16 @@ export async function overrideApproval(
     }
     logger.verbose(`Slot number for allowance: ${slotNumber}`);
     const allowanceSlot = getAllowanceSlot(ownerAddr, spender, slotNumber);
-    const formattedAllowance = zeroPadBytes(hexlify(newAllowance), 32);
+    const formattedAllowance = zeroPadBytes(
+      hexlify(
+        newAllowance === 'maxOverrideValue'
+          ? '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1'
+          : newAllowance === 'resetOverrideValue'
+            ? '0x00'
+            : '0x00',
+      ),
+      32,
+    );
     await provider.send('anvil_setStorageAt', [
       tokenAddr,
       allowanceSlot,
@@ -37,7 +47,29 @@ export async function overrideApproval(
     ]);
     logger.verbose(`Approval overridden`);
   } catch (e) {
-    logger.error(`error in overrideApproval: ${e}`);
+    logger.error(`error in overrideApproval: ${e.message}`);
+    // Check if the error message indicates a rate limit / timeout error
+    if (
+      retryCount > 0 &&
+      e.error &&
+      e.error.message &&
+      e.error.message.includes('HTTP error 429') &&
+      e.error.message.includes('error code: 1015')
+    ) {
+      // Wait 5 seconds and retry
+      logger.warn(`Retrying overrideApproval. Retries left: ${retryCount - 1}`);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      return overrideApproval(
+        tokenAddr,
+        ownerAddr,
+        spender,
+        newAllowance,
+        provider,
+        chainId,
+        retryCount - 1,
+      );
+    }
+    throw e;
   }
 }
 
@@ -68,7 +100,7 @@ function getAllowanceSlot(
     );
   } catch (e) {
     logger.error(`error in getAllowanceSlot: ${e}`);
-    throw e;
+    throw new Error(e);
   }
 }
 
@@ -78,6 +110,7 @@ export async function overrideBalance(
   newBalance: string,
   provider: JsonRpcProvider,
   chainId: string,
+  retryCount: number = 3,
 ) {
   try {
     const slotNumber = getBalanceSlotNumber(chainId, tokenAddr);
@@ -88,7 +121,16 @@ export async function overrideBalance(
     }
     logger.verbose(`Slot number for balance: ${slotNumber}`);
     const balanceSlot = getBalanceSlot(userAddr, slotNumber);
-    const formattedBalance = zeroPadBytes(hexlify(newBalance), 32);
+    const formattedBalance = zeroPadBytes(
+      hexlify(
+        newBalance === 'maxOverrideValue'
+          ? '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1'
+          : newBalance === 'resetOverrideValue'
+            ? '0x00'
+            : '0x00',
+      ),
+      32,
+    );
     await provider.send('anvil_setStorageAt', [
       tokenAddr,
       balanceSlot,
@@ -96,7 +138,28 @@ export async function overrideBalance(
     ]);
     logger.verbose(`Balance overridden`);
   } catch (e) {
-    logger.error(`error in overrideBalance: ${e}`);
+    logger.error(`error in overrideBalance: ${e.message}`);
+    // Check if the error message indicates a rate limit / timeout error
+    if (
+      retryCount > 0 &&
+      e.error &&
+      e.error.message &&
+      e.error.message.includes('HTTP error 429') &&
+      e.error.message.includes('error code: 1015')
+    ) {
+      // Wait 5 seconds and retry
+      logger.warn(`Retrying overrideApproval. Retries left: ${retryCount - 1}`);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      return overrideBalance(
+        tokenAddr,
+        userAddr,
+        newBalance,
+        provider,
+        chainId,
+        retryCount - 1,
+      );
+    }
+    throw e;
   }
 }
 
@@ -120,7 +183,7 @@ function getBalanceSlot(userAddr: string, mappingSlot: number): string {
     );
   } catch (e) {
     logger.error(`error in getBalanceSlot: ${e}`);
-    throw e;
+    throw new Error(e);
   }
 }
 

@@ -24,6 +24,8 @@ export async function getPathfinderData(requestParams: any, httpService: any) {
     if (quoteData == null) {
       throw new Error('quote not found');
     }
+    const quoteStartTime = quoteResponse.config.headers['request-startTime'];
+    const quoteDuration = Date.now() - quoteStartTime;
 
     const requestBody = {
       ...quoteData,
@@ -51,14 +53,17 @@ export async function getPathfinderData(requestParams: any, httpService: any) {
       throw new Error('error in building tx');
     }
 
-    return txResponse?.data;
+    const txnStartTime = txResponse.config.headers['request-startTime'];
+    const txnDuration = Date.now() - txnStartTime;
+
+    return [quoteDuration, txnDuration, txResponse?.data];
   } catch (error) {
     // throw new HttpException(
     //   `${error.response.request._header}, ${JSON.stringify(error.response.data)}`,
     //   error.status || 500,
     // );
     logger.error(
-      `${error.response.request._header}, ${JSON.stringify(error.response.data)}, ${error.status}`
+      `${error.response.request._header}, ${JSON.stringify(error.response.data)}, ${error.status}`,
     );
   }
 }
