@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 const whitelistedDestChainIds: Map<string, string[]> = new Map([
   ['1', ['56', '10', '100']],
   ['56', ['1', '137', '43114']],

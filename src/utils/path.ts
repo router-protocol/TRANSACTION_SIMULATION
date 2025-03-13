@@ -1,7 +1,8 @@
-import { HttpException, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
 import * as dotenv from 'dotenv';
 dotenv.config();
+
 const logger = new Logger('pathUtils');
 
 export async function getPathfinderData(
@@ -62,13 +63,6 @@ export async function getPathfinderData(
 
     return [quoteDuration, txnDuration, txResponse?.data];
   } catch (error) {
-    // throw new HttpException(
-    //   `${error.response.request._header}, ${JSON.stringify(error.response.data)}`,
-    //   error.status || 500,
-    // );
-    // logger.error(
-    //   `${error.response.request._header}, ${JSON.stringify(error.response.data)}, ${error.status}`,
-    // );
     if (
       error instanceof Error &&
       error.message.includes('Request failed with status code 429')

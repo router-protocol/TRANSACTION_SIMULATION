@@ -6,8 +6,8 @@ import {
   keccak256,
   AbiCoder,
 } from 'ethers';
-import { ALLOWANCE_MAP } from 'src/config/constants/allowanceSlotNumber.constant';
-import { BALANCE_MAP } from 'src/config/constants/balanceSlotNumber.constant';
+import { ALLOWANCE_MAP } from '../config/constants/allowanceSlotNumber.constant';
+import { BALANCE_MAP } from '../config/constants/balanceSlotNumber.constant';
 
 const abiEncoder = AbiCoder.defaultAbiCoder();
 const logger = new Logger('overrideUtils');
@@ -31,7 +31,7 @@ export async function overrideApproval(
     const allowanceSlot = getAllowanceSlot(ownerAddr, spender, slotNumber);
     const formattedAllowance = zeroPadBytes(
       hexlify(
-        '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1'
+        '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1',
       ),
       32,
     );
@@ -43,7 +43,6 @@ export async function overrideApproval(
     logger.verbose(`Approval overridden`);
   } catch (e) {
     logger.error(`error in overrideApproval: ${e.message}`);
-    // Check if the error message indicates a rate limit / timeout error
     if (
       retryCount > 0 &&
       e.error &&
@@ -51,7 +50,6 @@ export async function overrideApproval(
       e.error.message.includes('HTTP error 429') &&
       e.error.message.includes('error code: 1015')
     ) {
-      // Wait 5 seconds and retry
       logger.warn(`Retrying overrideApproval. Retries left: ${retryCount - 1}`);
       await new Promise((resolve) => setTimeout(resolve, 30000));
       return overrideApproval(
@@ -116,7 +114,7 @@ export async function overrideBalance(
     const balanceSlot = getBalanceSlot(userAddr, slotNumber);
     const formattedBalance = zeroPadBytes(
       hexlify(
-        '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1'
+        '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1',
       ),
       32,
     );
@@ -128,7 +126,6 @@ export async function overrideBalance(
     logger.verbose(`Balance overridden`);
   } catch (e) {
     logger.error(`error in overrideBalance: ${e.message}`);
-    // Check if the error message indicates a rate limit / timeout error
     if (
       retryCount > 0 &&
       e.error &&
@@ -136,7 +133,6 @@ export async function overrideBalance(
       e.error.message.includes('HTTP error 429') &&
       e.error.message.includes('error code: 1015')
     ) {
-      // Wait 5 seconds and retry
       logger.warn(`Retrying overrideApproval. Retries left: ${retryCount - 1}`);
       await new Promise((resolve) => setTimeout(resolve, 30000));
       return overrideBalance(
@@ -174,40 +170,3 @@ function getBalanceSlot(userAddr: string, mappingSlot: number): string {
     throw new Error(e);
   }
 }
-
-// overrideApproval(chainid) {
-
-//     const slotNumber =  approvalSlotNumberMap(chainid);
-//     //LOGIC - slotNumber
-// }
-
-// overrideBalance(chainid) {
-//     const slotNumber =  getBalanceSlotNumber(chainid)
-//     //LOGIC - slotNumber
-
-// }
-
-// getapprovalSlotNumber(chainid) {
-//     const slotNumber =  approvalSlotNumberMap[chainid];
-
-//     if (slotNumber) return slotNumber;
-
-//     return  0;
-// }
-
-// getBalanceSlotNumber(chainid) {
-//     const slotNumber =  balanceSlotNumberMap[chainid];
-
-//     if (slotNumber) return slotNumber;
-
-//     return  1;
-// }
-
-// approvalSlotNumberMap = {
-//     `0xfff-1`: 10
-
-// }
-
-// balanceSlotNumberMap = {
-//     `0xfff-1`: 9
-// }

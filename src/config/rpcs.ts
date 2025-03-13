@@ -1,7 +1,6 @@
-// src/constants/rpc-map.ts
-// import { RpcEntry } from '../interfaces/rpc-entry.interface';
+type ChainId = string;
+type RpcUrl = string[];
 
-// Your JSON data
 const rpcData = [
   {
     chainId: '100',
@@ -428,8 +427,6 @@ const rpcData = [
   },
 ];
 
-const rpcMap: Map<string, string[]> = new Map(
+export const rpcMap: Map<ChainId, RpcUrl> = new Map(
   rpcData.map((entry) => [entry.chainId, entry.rpcs]),
 );
-
-export default rpcMap;

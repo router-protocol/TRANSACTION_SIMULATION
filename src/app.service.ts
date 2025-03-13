@@ -1,4 +1,9 @@
-import { Injectable, Logger, Scope } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  Scope,
+} from '@nestjs/common';
 import { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { HttpService } from '@nestjs/axios';
 import { JsonRpcProvider } from 'ethers';
@@ -11,11 +16,13 @@ import { isNative } from './config/chainType';
 import { processCombinations } from './utils/combinations';
 import { writeJsonFile } from './utils/fileOps';
 import { processReport } from './utils/googleReport/googleReport';
+import inputs from './config/customCombinations.json';
+import { isSourceDestChainAllowed } from './utils/filterChains';
 const fs = require('fs');
 const path = require('path');
 
 @Injectable({ scope: Scope.REQUEST })
-export class AppService {
+export class AppService implements OnApplicationBootstrap {
   constructor(
     private readonly httpService: HttpService,
     private readonly anvilManager: AnvilManagerService,
@@ -46,6 +53,9 @@ export class AppService {
       },
     );
   }
+  onApplicationBootstrap() {
+    this.runTestFlow();
+  }
   private readonly logger = new Logger(AppService.name);
   public failedCount = 0;
   private currentReportData: any[] = []; // Track steps for the current transaction
@@ -54,6 +64,56 @@ export class AppService {
   private reportJson = {};
   private reportFileName: string;
   public errorTokenAddrs: any[] = [];
+
+  async runTestFlow(): Promise<void> {
+    await this.initiateReporter();
+    let count = 0;
+    try {
+      const sortedData = inputs.sort(
+        (a, b) => Number(a.sourceChain) - Number(b.sourceChain),
+      );
+
+      for (const input of sortedData) {
+        if (
+          !isSourceDestChainAllowed(input.sourceChain, input.destinationChain)
+        ) {
+          continue;
+        }
+        this.logger.log(`Processing input: ${count++}`);
+        try {
+          const sourceChain = input.sourceChain;
+          const [provider, owner]: [JsonRpcProvider, string] =
+            await this.manageAnvil(sourceChain);
+
+          // pf api
+          const transactionData = await this.getPathfinderData({
+            ...input,
+            owner: owner,
+          });
+
+          await this.overrideApprovalAndBalance(
+            transactionData,
+            provider,
+            sourceChain,
+          );
+
+          await this.simulateTransaction(transactionData, provider);
+        } catch (err) {
+          this.logger.error(`error caught in main controller`, err);
+          continue;
+        } finally {
+          await this.writeReport();
+        }
+      }
+    } catch (err) {
+      this.logger.error(`error caught in main controller`, err);
+    } finally {
+      await this.googleReport();
+      await this.stopAnvil();
+      this.logger.verbose(`Failed count is : ${this.failedCount}`);
+      this.failedCount = 0;
+    }
+  }
 
   async manageAnvil(sourceChain: string): Promise<[JsonRpcProvider, string]> {
     try {
@@ -115,8 +175,6 @@ export class AppService {
     chainId,
   ): Promise<boolean> {
     try {
-      // if token is native skip approval @akshay. Use isNative() method
-
       const tokenAddr: string = transactionData.fromTokenAddress;
       const owner: string = transactionData.txn.from;
       const spender: string = transactionData.allowanceTo;
@@ -221,26 +279,22 @@ export class AppService {
       fs.mkdirSync(reportDir);
     }
 
-    // Generate filename ONCE (first transaction)
     if (!this.reportFileName) {
       this.reportFileName = `report-${new Date().toISOString()}.json`;
     }
 
     const reportFilePath = path.join(reportDir, this.reportFileName);
 
-    // Add current transaction data to the report
     this.reportJson[this.txnNumber] = {
       input: this.currentInput,
       output: this.currentReportData,
     };
 
-    // Overwrite the file with ALL transactions
     await fs.writeFileSync(
       reportFilePath,
       JSON.stringify(this.reportJson, null, 2),
     );
 
-    // Reset for the next transaction
     this.currentReportData = [];
     this.currentInput = null;
     this.txnNumber++;
@@ -252,24 +306,13 @@ export class AppService {
       fs.mkdirSync(reportDir);
     }
 
-    // Generate filename ONCE (first transaction)
     let jsonFileName = `reservedTokens.json`;
 
     const jsonFilePath = path.join(reportDir, jsonFileName);
 
-    // Add current transaction data to the report
-    // this.reportJson[this.txnNumber] = {
-    //   input: this.currentInput,
-    //   output: this.currentReportData,
-    // };
 
-    // Overwrite the file with ALL transactions
     await fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2));
 
-    // Reset for the next transaction
-    // this.currentReportData = [];
-    // this.currentInput = null;
-    // this.txnNumber++;
     this.logger.log(`JSON saved at ${jsonFilePath}`);
   }
   async generateTokens() {
