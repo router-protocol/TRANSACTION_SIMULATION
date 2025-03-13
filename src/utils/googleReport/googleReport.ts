@@ -38,7 +38,7 @@ async function appendBatchToSheet(rows: any[][]) {
     },
   });
 
-  console.log('Data added to Google Sheet successfully!');
+  logger.log('Data added to Google Sheet successfully!');
 }
 
 // Sample cron task function
