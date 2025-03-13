@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { startAnvil } from '@brinkninja/node-anvil';
-import rpcFile from '../config/rpcs.json';
+import { rpcMap } from '../config/rpcs';
 import { JsonRpcProvider } from 'ethers';
 
 @Injectable()
@@ -38,15 +38,10 @@ export class AnvilManagerService {
   }
 
   async startAnvil(sourceChainId: string): Promise<any> {
-    const rpcsForChain: any = rpcFile.find(
-      (chain) => chain.chainId === sourceChainId,
-    );
-    if (!rpcsForChain || !rpcsForChain.rpcs || rpcsForChain.rpcs.length === 0) {
+    const rpcs = rpcMap.get(sourceChainId);
+    if (!rpcs || rpcs.length === 0) {
       throw new Error(`No RPC URLs found for chainId ${sourceChainId}`);
     }
-    const rpcs = rpcsForChain.rpcs;
-
-    // let anvilInstance: any;
     for (const rpc of rpcs) {
       try {
         this.anvilInstance = await startAnvil({
@@ -68,15 +63,10 @@ export class AnvilManagerService {
   }
   getProvider(): JsonRpcProvider {
     return new JsonRpcProvider(`http://localhost:8545`, undefined, {
-      // Disable request batching
       batchMaxCount: 1,
-      // Assume network won't change (required for INFURA/Alchemy)
       staticNetwork: true,
-      // Reduce batch aggregation time to minimum
       batchStallTime: 0,
-      // Set smaller batch size (1kb) to prevent oversized requests
       batchMaxSize: 1024,
-      // Disable built-in caching
       cacheTimeout: -1,
     });
   }

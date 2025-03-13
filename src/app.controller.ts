@@ -1,127 +1,117 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 import { AppService } from './app.service';
-import { AnvilManagerService } from './anvil-manager/anvil-manager.service';
-import inputs from './config/customCombinations.json';
 import { JsonRpcProvider } from 'ethers';
-import { AllowanceService } from './allowance/allowance.service';
+import { tokens } from './config/tokens';
+import { getChainTypeMap } from './config/chainType';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 @Controller()
 export class AppController {
-  constructor(
-    private readonly appService: AppService,
-    private readonly anvilManager: AnvilManagerService,
-    private readonly allowanceService: AllowanceService,
-  ) {}
+  constructor(private readonly appService: AppService) {}
   private readonly logger = new Logger(AppController.name);
 
   @Get()
   async getSimulation(): Promise<string> {
+    await this.appService.runTestFlow();
+    return 'hello world';
+  }
+
+  // TODO: @akshay
+  @Get('/override-slots')
+  async simulateApprovalAndBlanace(): Promise<string> {
+    let count = 0;
+    const finalTokens: any[] = [];
     try {
-      const sortedData = inputs.sort(
-        (a, b) => Number(a.sourceChain) - Number(b.sourceChain),
-      );
+      // TODO: @akshay
+      // read tokens and sort it
+      const sortTokensByChainId = (tokens) => {
+        // Create a copy to avoid mutation
+        const tokensCopy = [...tokens];
 
-      for (const input of sortedData) {
-        const sourceChain = input.sourceChain;
-        const provider: JsonRpcProvider =
-          await this.anvilManager.manage(sourceChain);
-        this.logger.log(provider);
-        const quoteData: any = await this.appService.getQuote(input);
-        const accounts = await provider.listAccounts();
+        return tokensCopy.sort((a, b) => {
+          const isANumeric = !isNaN(Number(a.chainId));
+          const isBNumeric = !isNaN(Number(b.chainId));
 
-        const owner: string = accounts[0].address;
-        const transactionData = await this.appService.getTransaction(
-          quoteData,
-          owner,
-        );
-        const tokenAddr: string = transactionData.fromTokenAddress;
-        const spender: string = transactionData.allowanceTo;
+          // Both numeric - compare numerically
+          if (isANumeric && isBNumeric) {
+            return Number(a.chainId) - Number(b.chainId);
+          }
 
-        await this.appService.overrideApproval(
-          tokenAddr,
-          owner,
-          spender,
-          '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1',
-          provider,
-        );
-        this.logger.debug(
-          await this.allowanceService.getAllowance(
-            provider,
-            tokenAddr,
-            owner,
-            spender,
-          ),
-        );
-        let slotNumber = 9;
-        await this.appService.overrideBalance(
-          tokenAddr,
-          owner,
-          '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1',
-          provider,
-          slotNumber,
-        );
-        this.logger.debug(
-          `for slot ${slotNumber} balance is: ` +
-            (await this.allowanceService.getBalance(
-              provider,
-              tokenAddr,
-              owner,
-            )),
-        );
+          // Both non-numeric - compare alphabetically
+          if (!isANumeric && !isBNumeric) {
+            return a.chainId.localeCompare(b.chainId);
+          }
 
-        const tx = {
-          from: transactionData.txn.from,
-          to: transactionData.txn.to,
-          // value: transactionData.txn.value,
-          data: transactionData.txn.data,
-          // gasLimit: transactionData.txn.gasLimit,
-          // gasPrice: transactionData.txn.gasPrice,
-        };
-        this.logger.debug(`Transaction data: ${JSON.stringify(tx)}`);
+          // Numeric comes before non-numeric
+          return isANumeric ? -1 : 1;
+        });
+      };
+
+      // check chaintype if it is evm proceed
+      const sortedTokens = sortTokensByChainId(tokens);
+
+      for (const token of sortedTokens) {
+        // if (token.chainId !== '42161') {
+        //   continue;
+        // }
+        this.logger.log(`Processing input: ${count++}`);
         try {
-          this.logger.debug(
-            await this.allowanceService.getAllowance(
-              provider,
-              tokenAddr,
-              owner,
-              spender,
-            ),
-          );
-          const result = await provider.call(tx);
-          this.logger.log(`Simulation successful. Result: ${result}`);
-        } catch (err) {
-          this.logger.error(`Error caught in simulation ${err}`);
-        }
+          const sourceChain = token.chainId;
+          const chainType = await getChainTypeMap(sourceChain);
+          if (chainType !== 'evm') {
+            continue;
+          }
+          const [provider, owner]: [JsonRpcProvider, string] =
+            await this.appService.manageAnvil(sourceChain);
 
-        await this.appService.overrideApproval(
-          tokenAddr,
-          owner,
-          spender,
-          '0x00',
-          provider,
-        );
-        this.logger.debug(
-          await this.allowanceService.getAllowance(
-            provider,
-            tokenAddr,
-            owner,
-            spender,
-          ),
-        );
-        await this.appService.overrideBalance(
-          tokenAddr,
-          owner,
-          '0x00',
-          provider,
-          slotNumber,
-        );
+          // override approval and balance
+          // for native 0xeee.. skip but add to final output
+          const transaction = {
+            source: {
+              chainId: sourceChain,
+            },
+            fromTokenAddress: token.address,
+            txn: { from: owner },
+            allowanceTo: '0x1234567890abcdef1234567890abcdef12345678',
+          };
+          let overrideResult: boolean = false;
+          if (chainType === 'evm') {
+            overrideResult = await this.appService.overrideApprovalAndBalance(
+              transaction,
+              provider,
+              sourceChain,
+            );
+            // check if override works
+            if (overrideResult) {
+              finalTokens.push(token);
+            }
+          }
+
+          this.logger.verbose(
+            `Token processed: ${JSON.stringify(finalTokens)}`,
+          );
+
+          // output as json
+        } catch (err) {
+          this.logger.error(`error caught in main controller`, err);
+          continue;
+        }
       }
     } catch (err) {
       this.logger.error(`error caught in main controller`, err);
     } finally {
-      await this.anvilManager.stopAnvil();
-      this.anvilManager.reset();
+      await this.appService.stopAnvil();
+      await this.appService.writeJson(finalTokens);
+      this.logger.warn(
+        `tokens with error are ${JSON.stringify(this.appService.errorTokenAddrs)}`,
+      );
     }
     return 'hello world';
+  }
+  @Get('/generateCombinations')
+  async generateCombinations(): Promise<string> {
+    await this.appService.generateTokens();
+    return 'hello world!';
   }
 }
