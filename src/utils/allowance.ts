@@ -43,3 +43,21 @@ export async function getBalance(
     // throw new Error(error);
   }
 }
+
+export async function getNativeBalance(
+  provider: JsonRpcProvider,
+  tokenAddress: string,
+  owner: string,
+): Promise<string | undefined> {
+  try {
+    // const tokenContract = new Contract(tokenAddress, tokenAbi, provider);
+    const balance = await provider.getBalance(owner);
+    logger.debug(
+      `Balance for ${owner} for token ${tokenAddress} is ${balance}`,
+    );
+    return balance.toString();
+  } catch (error) {
+    logger.error('Error fetching balance', 'error');
+    // throw new Error(error);
+  }
+}

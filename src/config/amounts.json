@@ -1,0 +1,30 @@
+[
+    {
+        "symbol": "ETH",
+        "amount": {
+            "others": 0.6,
+            "1": 0.001
+        }
+    },
+    {
+        "symbol": "ROUTEV1",
+        "amount": {
+            "others": 0.6,
+            "1": 1
+        }
+    },
+    {
+        "symbol": "USDT",
+        "amount": {
+            "others": 0.6,
+            "1": 1
+        }
+    },
+    {
+        "symbol": "DFYN",
+        "amount": {
+            "others": 0.6,
+            "1": 1
+        }
+    }
+]

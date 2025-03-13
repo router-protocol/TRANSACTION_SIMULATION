@@ -6,7 +6,11 @@ import { getPathfinderData } from './utils/path';
 import { overrideApproval, overrideBalance } from './utils/overrides';
 import { getTxnData } from './utils/txnData';
 import { AnvilManagerService } from './anvil-manager/anvil-manager.service';
-import { getAllowance, getBalance } from './utils/allowance';
+import { getAllowance, getBalance, getNativeBalance } from './utils/allowance';
+import { isNative } from './config/chainType';
+import { processCombinations } from './utils/combinations';
+import { writeJsonFile } from './utils/fileOps';
+import { processReport } from './utils/googleReport/googleReport';
 const fs = require('fs');
 const path = require('path');
 
@@ -49,6 +53,7 @@ export class AppService {
   private txnNumber: number = 0;
   private reportJson = {};
   private reportFileName: string;
+  public errorTokenAddrs: any[] = [];
 
   async manageAnvil(sourceChain: string): Promise<[JsonRpcProvider, string]> {
     try {
@@ -107,39 +112,52 @@ export class AppService {
   async overrideApprovalAndBalance(
     transactionData,
     provider,
-    newValue,
     chainId,
-  ) {
+  ): Promise<boolean> {
     try {
-
       // if token is native skip approval @akshay. Use isNative() method
 
       const tokenAddr: string = transactionData.fromTokenAddress;
       const owner: string = transactionData.txn.from;
       const spender: string = transactionData.allowanceTo;
-      // const newAllowance: string =
-      //   '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1';
-      // const newBalance: string =
-      //   '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1';
-      await overrideApproval(
+      if (isNative(transactionData.source.chainId, tokenAddr)) {
+        await getNativeBalance(provider, tokenAddr, owner);
+        return true;
+      }
+      await overrideApproval(tokenAddr, owner, spender, provider, chainId);
+      const allowanceAmount = await getAllowance(
+        provider,
         tokenAddr,
         owner,
         spender,
-        newValue,
-        provider,
-        chainId,
       );
-      await getAllowance(provider, tokenAddr, owner, spender);
-      await overrideBalance(tokenAddr, owner, newValue, provider, chainId);
-      await getBalance(provider, tokenAddr, owner);
+      await overrideBalance(tokenAddr, owner, provider, chainId);
+      const balanceAmount = await getBalance(provider, tokenAddr, owner);
       const successMessage = {
         overrideApprovalAndBalance: {
           status: 'success',
         },
       };
       this.currentReportData.push(successMessage);
+      if (allowanceAmount !== '0' && balanceAmount !== '0') {
+        return true;
+      } else {
+        return false;
+      }
     } catch (e) {
       this.logger.error(`error in overrideApprovalAndBalance: ${e}`);
+      if (
+        e.error &&
+        e.error.message &&
+        e.error.message.includes('HTTP error 429') &&
+        e.error.message.includes('error code: 1015')
+      ) {
+        this.logger.warn(e.payload.params[0]);
+        this.errorTokenAddrs.push({
+          tokenAddr: transactionData.fromTokenAddress,
+          chainId: transactionData.source.chainId,
+        });
+      }
       const errorMessage = {
         overrideApprovalAndBalance: {
           status: 'error',
@@ -164,16 +182,16 @@ export class AppService {
         },
       };
       this.currentReportData.push(successMessage);
-    } catch (err) {
+    } catch (e) {
       this.failedCount++;
       const errorMessage = {
         simulateTransaction: {
           status: 'error',
-          error: err.message,
+          error: e.message,
         },
       };
       this.currentReportData.push(errorMessage);
-      this.logger.error(`Error caught in simulation ${err}`);
+      this.logger.error(`Error caught in simulation ${e}`);
     }
   }
   async stopAnvil(): Promise<void> {
@@ -228,7 +246,47 @@ export class AppService {
     this.txnNumber++;
     this.logger.log(`Report updated at ${reportFilePath}`);
   }
-  async logReport(){
-    
+  async writeJson(jsonData) {
+    const reportDir = path.join(__dirname, '..', 'src', 'config');
+    if (!fs.existsSync(reportDir)) {
+      fs.mkdirSync(reportDir);
+    }
+
+    // Generate filename ONCE (first transaction)
+    let jsonFileName = `reservedTokens.json`;
+
+    const jsonFilePath = path.join(reportDir, jsonFileName);
+
+    // Add current transaction data to the report
+    // this.reportJson[this.txnNumber] = {
+    //   input: this.currentInput,
+    //   output: this.currentReportData,
+    // };
+
+    // Overwrite the file with ALL transactions
+    await fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2));
+
+    // Reset for the next transaction
+    // this.currentReportData = [];
+    // this.currentInput = null;
+    // this.txnNumber++;
+    this.logger.log(`JSON saved at ${jsonFilePath}`);
+  }
+  async generateTokens() {
+    const jsonPath = path.join(
+      __dirname,
+      '..',
+      'src/config/customCombinations.json',
+    );
+    await writeJsonFile(jsonPath, await processCombinations());
+  }
+  async googleReport() {
+    const reportDir = path.join(__dirname, '..', 'reports');
+    if (!fs.existsSync(reportDir)) {
+      fs.mkdirSync(reportDir);
+    }
+    const reportFilePath = path.join(reportDir, this.reportFileName);
+
+    await processReport(reportFilePath);
   }
 }

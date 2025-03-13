@@ -16,7 +16,6 @@ export async function overrideApproval(
   tokenAddr: string,
   ownerAddr: string,
   spender: string,
-  newAllowance: string,
   provider: JsonRpcProvider,
   chainId: string,
   retryCount: number = 3,
@@ -32,11 +31,7 @@ export async function overrideApproval(
     const allowanceSlot = getAllowanceSlot(ownerAddr, spender, slotNumber);
     const formattedAllowance = zeroPadBytes(
       hexlify(
-        newAllowance === 'maxOverrideValue'
-          ? '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1'
-          : newAllowance === 'resetOverrideValue'
-            ? '0x00'
-            : '0x00',
+        '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1'
       ),
       32,
     );
@@ -58,12 +53,11 @@ export async function overrideApproval(
     ) {
       // Wait 5 seconds and retry
       logger.warn(`Retrying overrideApproval. Retries left: ${retryCount - 1}`);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 30000));
       return overrideApproval(
         tokenAddr,
         ownerAddr,
         spender,
-        newAllowance,
         provider,
         chainId,
         retryCount - 1,
@@ -107,7 +101,6 @@ function getAllowanceSlot(
 export async function overrideBalance(
   tokenAddr: string,
   userAddr: string,
-  newBalance: string,
   provider: JsonRpcProvider,
   chainId: string,
   retryCount: number = 3,
@@ -123,11 +116,7 @@ export async function overrideBalance(
     const balanceSlot = getBalanceSlot(userAddr, slotNumber);
     const formattedBalance = zeroPadBytes(
       hexlify(
-        newBalance === 'maxOverrideValue'
-          ? '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1'
-          : newBalance === 'resetOverrideValue'
-            ? '0x00'
-            : '0x00',
+        '0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1'
       ),
       32,
     );
@@ -149,11 +138,10 @@ export async function overrideBalance(
     ) {
       // Wait 5 seconds and retry
       logger.warn(`Retrying overrideApproval. Retries left: ${retryCount - 1}`);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 30000));
       return overrideBalance(
         tokenAddr,
         userAddr,
-        newBalance,
         provider,
         chainId,
         retryCount - 1,

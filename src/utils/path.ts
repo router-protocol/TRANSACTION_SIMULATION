@@ -4,7 +4,11 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 const logger = new Logger('pathUtils');
 
-export async function getPathfinderData(requestParams: any, httpService: any) {
+export async function getPathfinderData(
+  requestParams: any,
+  httpService: any,
+  retryCount = 3,
+) {
   try {
     const params = {
       fromTokenAddress: requestParams.sourceToken,
@@ -62,8 +66,20 @@ export async function getPathfinderData(requestParams: any, httpService: any) {
     //   `${error.response.request._header}, ${JSON.stringify(error.response.data)}`,
     //   error.status || 500,
     // );
-    logger.error(
-      `${error.response.request._header}, ${JSON.stringify(error.response.data)}, ${error.status}`,
-    );
+    // logger.error(
+    //   `${error.response.request._header}, ${JSON.stringify(error.response.data)}, ${error.status}`,
+    // );
+    if (
+      error instanceof Error &&
+      error.message.includes('Request failed with status code 429')
+    ) {
+      logger.warn(
+        `Retrying getPathfinderData. Retries left: ${retryCount - 1}`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 20000));
+      return getPathfinderData(requestParams, httpService, retryCount - 1);
+    }
+    logger.warn(`the error is ${error}`);
+    throw new Error(error);
   }
 }
