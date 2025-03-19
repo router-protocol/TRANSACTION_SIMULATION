@@ -61,7 +61,9 @@ export async function getPathfinderData(
     const txnStartTime = txResponse.config.headers['request-startTime'];
     const txnDuration = Date.now() - txnStartTime;
 
-    return [quoteDuration, txnDuration, txResponse?.data];
+    const swapCount: number = await getSwapCount(txResponse);
+
+    return [quoteDuration, txnDuration, txResponse?.data, swapCount];
   } catch (error) {
     if (
       error instanceof Error &&
@@ -76,4 +78,13 @@ export async function getPathfinderData(
     logger.warn(`the error is ${error}`);
     throw new Error(error);
   }
+}
+
+async function getSwapCount(txnData: any): Promise<number> {
+  const isSrcSwaps: boolean = txnData.data.source.path.length > 1;
+  const isDestSwaps: boolean = txnData.data.destination.path.length > 1;
+
+  if (isSrcSwaps && isDestSwaps) return 2;
+  if (isSrcSwaps || isDestSwaps) return 1;
+  return 0;
 }
