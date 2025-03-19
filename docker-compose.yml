@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  # anvil:
+  #   image: ghcr.io/foundry-rs/foundry:latest
+  #   container_name: anvil
+  #   command: anvil --host 0.0.0.0 --port 8545
+  #   ports:
+  #     - "8545:8545"
+
+  nestjs:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Uses the updated Node 22 image
+    container_name: nestjs-app
+    # depends_on:
+    #   - anvil
+    # environment:
+    #   - ANVIL_RPC_URL=http://anvil:8545
+    ports:
+      - "3000:3000"
+    # restart: always
