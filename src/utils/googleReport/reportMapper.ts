@@ -37,6 +37,10 @@ export function mapReportDataToSheet(data: any): any[] {
         ? output.find((o: any) => o.getPathfinderData)?.getPathfinderData
             .txnResponseTime
         : '',
+      status.pathfinder === 'success'
+        ? output.find((o: any) => o.getPathfinderData)?.getPathfinderData
+            .numberOfSwaps
+        : '',
       error?.reason || '',
       error?.code || '',
       JSON.stringify(error || ''),

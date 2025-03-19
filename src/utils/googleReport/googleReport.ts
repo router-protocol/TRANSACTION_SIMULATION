@@ -66,6 +66,7 @@ export async function processReport(filePath: string) {
         'Status',
         'Quote Time (ms)',
         'Txn Time (ms)',
+        'Number of Swaps',
         'Error Reason',
         'Error Code',
         'Full Error',

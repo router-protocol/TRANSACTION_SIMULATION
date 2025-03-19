@@ -145,12 +145,14 @@ export class AppService implements OnApplicationBootstrap {
     try {
       this.currentInput = params; // Store input parameters for the current transaction
       const result = await getPathfinderData(params, this.httpService);
-      const [quoteResponseTime, txnResponseTime, txnResponse] = result || [];
+      const [quoteResponseTime, txnResponseTime, txnResponse, swapCount] =
+        result || [];
       const successMessage = {
         getPathfinderData: {
           status: 'success',
           quoteResponseTime,
           txnResponseTime,
+          numberOfSwaps: swapCount,
         },
       };
       this.currentReportData.push(successMessage);
@@ -309,7 +311,6 @@ export class AppService implements OnApplicationBootstrap {
     let jsonFileName = `reservedTokens.json`;
 
     const jsonFilePath = path.join(reportDir, jsonFileName);
-
 
     await fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2));
 
