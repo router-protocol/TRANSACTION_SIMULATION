@@ -1,0 +1,49 @@
+steps:
+  # Notification step with the current status
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'start-get-status'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        curl -X POST -H 'Content-type: application/json' --data '{
+          "text": "env: $_ENV. tag: $TAG_NAME, repo: $REPO_FULL_NAME. Build $BUILD_ID in project $PROJECT_ID has STARTED."
+        }' "$_SLACK_WEBHOOK"
+  
+  # Step 1: Build and push the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: 
+      - '-c'
+      - |
+        echo "=========================="
+        echo "build docker image"
+        echo "=========================="
+        DOCKER_BUILDKIT=1 docker build \
+          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA} \
+          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:latest .
+
+        echo "=========================="
+        echo "push docker image"
+        echo "=========================="
+        docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA}
+        docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:latest
+  
+  # Notification step with the current status
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'finish-get-status'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        curl -X POST -H 'Content-type: application/json' --data '{
+            "text": "env: $_ENV. tag: $TAG_NAME, repo: $REPO_FULL_NAME. Build $BUILD_ID in project $PROJECT_ID is COMPLETED."
+          }' "$_SLACK_WEBHOOK"
+
+# Substitute variables
+substitutions:
+  _ENV: 'mainnet'
+  _REGION: 'asia-south1'
+  _REPOSITORY: 'router-apps-asia-south'
+  _IMAGE: 'transaction_simulation'
+  _SLACK_WEBHOOK: ''
