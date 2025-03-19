@@ -45,5 +45,5 @@ substitutions:
   _ENV: 'mainnet'
   _REGION: 'asia-south1'
   _REPOSITORY: 'router-apps-asia-south'
-  _IMAGE: 'transaction_simulation'
+  _IMAGE: 'transaction-simulation'
   _SLACK_WEBHOOK: ''
