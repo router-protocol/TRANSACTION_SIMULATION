@@ -81,8 +81,9 @@ export async function getPathfinderData(
 }
 
 async function getSwapCount(txnData: any): Promise<number> {
-  const isSrcSwaps: boolean = txnData.data.source.path.length > 1;
-  const isDestSwaps: boolean = txnData.data.destination.path.length > 1;
+  const isSrcSwaps: boolean = (txnData.data.source?.path?.length ?? 0) > 1;
+  const isDestSwaps: boolean =
+    (txnData.data.destination?.path?.length ?? 0) > 1;
 
   if (isSrcSwaps && isDestSwaps) return 2;
   if (isSrcSwaps || isDestSwaps) return 1;

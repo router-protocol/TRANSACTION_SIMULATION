@@ -3,4 +3,11 @@ export const BALANCE_MAP = new Map<string, number>([
   ['8453-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', 9],
   ['10-0x0b2c639c533813f4aa9d7837caf62653d097ff85', 9],
   ['42161-0xaf88d065e77c8cc2239327c5edb3a432268e5831', 9],
+  ['42161-0xda10009cbd5d07dd0cecc66161fc93d7c9000da1', 2],
+  ['1-0x6b175474e89094c44da98b954eedeac495271d0f', 2],
+  ['10-0xda10009cbd5d07dd0cecc66161fc93d7c9000da1', 2],
+  ['56-0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3', 1],
+  ['100-0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', 2],
+  ['137-0x8f3cf7ad23cd3cadbd9735aff958023239c6a063', 0],
+  ['1313161554-0xe3520349f477a5f6eb06107066048508498a291b', 2],
 ]);
