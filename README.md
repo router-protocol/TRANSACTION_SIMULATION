@@ -1,99 +1,189 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Transaction Simulation
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A NestJS-based application for simulating blockchain transactions and testing token approvals across multiple EVM-compatible chains.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
 
-## Description
+- Simulates transactions on multiple EVM chains
+- Manages Anvil instances for local blockchain simulation
+- Overrides token approvals and balances
+- Generates token combinations for testing
+- Reports results to Google Sheets
+- Handles rate limiting and retries
+- Supports multiple RPC providers
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Prerequisites
 
-## Project setup
+- Node.js v16+
+- npm
+- Docker (optional, for containerization)
+- Google Sheets API credentials
 
+## Installation
+
+1. Clone the repository:
 ```bash
-$ npm install
+git clone https://github.com/router-protocol/TRANSACTION_SIMULATION.git
+cd transaction_simulation
 ```
 
-## Compile and run the project
-
+2. Install dependencies:
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
-
+3. Configure environment variables:
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cp .env.example .env
+# Edit .env with your settings
 ```
 
-## Deployment
+4. Set up configuration files:
+- `src/config/rpcs.ts`: RPC endpoints
+- `src/config/tokens.ts`: Token addresses
+- `src/config/customCombinations.json`: Test combinations
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Usage
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+### Running Tests
 ```bash
-$ npm install -g mau
-$ mau deploy
+npm run start:dev
+# or with ts-node
+npx ts-node scripts/run-task.ts
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### API Endpoints
 
-## Resources
+- `GET /`: Run transaction simulations
+- `GET /override-slots`: Test token approvals
+- `GET /generateCombinations`: Generate test combinations
 
-Check out a few resources that may come in handy when working with NestJS:
+## Configuration
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### RPC Configuration
+```typescript
+// src/config/rpcs.ts
+export default {
+  '137': ['https://polygon-rpc.com'],
+  '42161': ['https://arb1.arbitrum.io/rpc']
+}
+```
 
-## Support
+### Token Configuration
+```typescript
+// src/config/tokens.ts
+export const tokens = [
+  {
+    chainId: '137',
+    address: '0x...'
+  }
+]
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Token Whitelisting
 
-## Stay in touch
+The application implements a two-layer whitelisting system:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Chain Whitelisting
+- Configured in `src/utils/filterChains.ts`
+- Controls which source chains can interact with which destination chains
+- Environment variable `SUPPORTED_CHAINS` defines allowed source chains
 
-## License
+### Token Whitelisting
+- Defined in `src/config/tokens.ts`
+- Specifies which tokens are supported on each chain
+- Format:
+```typescript
+export const tokens = [
+  {
+    chainId: '137',
+    address: '0x...'  // Token contract address
+  }
+]
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### Validation Flow
+1. Checks if source chain is in `SUPPORTED_CHAINS`
+2. Validates if destination chain is allowed for the source chain
+3. Verifies token addresses are whitelisted for both chains
+
+## Error Handling
+
+The application includes comprehensive error handling for:
+- RPC timeouts and rate limits
+- Invalid token addresses
+- Failed transactions
+- Network issues
+
+## Reporting
+
+Results are saved in two formats:
+1. JSON logs in `reports/` directory (includes detailed transaction simulations and errors)
+2. Google Sheets (when configured)
+
+## Docker Support
+
+Build and run with Docker:
+```bash
+docker-compose build
+docker-compose up
+```
+
+## Project Structure
+
+```
+.
+├── Dockerfile
+├── README.md
+├── docker-compose.yml
+├── eslint.config.mjs
+├── inputs
+│   └── standardTokens.json
+├── nest-cli.json
+├── package.json
+├── scripts
+│   └── run-task.ts
+├── src
+│   ├── anvil-manager
+│   │   └── anvil-manager.service.ts
+│   ├── app.controller.ts
+│   ├── app.module.ts
+│   ├── app.service.ts
+│   ├── config
+│   │   ├── amounts.json
+│   │   ├── chainType.ts
+│   │   ├── constants
+│   │   │   ├── allowanceSlotNumber.constant.ts
+│   │   │   └── balanceSlotNumber.constant.ts
+│   │   ├── credentials
+│   │   │   └── google-credentials.ts
+│   │   ├── customCombinations.json
+│   │   ├── reservedTokens.json
+│   │   ├── rpcs.ts
+│   │   └── tokens.ts
+│   ├── main.ts
+│   └── utils
+│       ├── allowance.ts
+│       ├── balance.ts
+│       ├── combinations.ts
+│       ├── fileOps.ts
+│       ├── filterChains.ts
+│       ├── googleReport
+│       │   ├── googleReport.ts
+│       │   └── reportMapper.ts
+│       ├── overrides.ts
+│       ├── path.ts
+│       └── txnData.ts
+├── test
+│   ├── app.e2e-spec.ts
+│   └── jest-e2e.json
+├── tsconfig.build.json
+└── tsconfig.json
+```
+
+## Troubleshooting
+
+Common issues:
+1. RPC Rate Limits: Use alternative RPC providers or implement delays
+2. Module Not Found: Ensure all dependencies are installed
+3. Google Sheets API: Verify credentials and permissions

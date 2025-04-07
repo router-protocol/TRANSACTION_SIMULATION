@@ -97,6 +97,9 @@ export class AppService implements OnApplicationBootstrap {
             sourceChain,
           );
 
+          //estimategas and console it
+          const gas = await provider.estimateGas(transactionData);
+          this.logger.log(typeof gas, gas);
           await this.simulateTransaction(transactionData, provider);
         } catch (err) {
           this.logger.error(`error caught in main controller`, err);
@@ -231,6 +234,7 @@ export class AppService implements OnApplicationBootstrap {
   async simulateTransaction(
     transactionData: any,
     provider: JsonRpcProvider,
+    retryCount = 3,
   ): Promise<void> {
     try {
       const txn = await getTxnData(transactionData);
@@ -243,6 +247,24 @@ export class AppService implements OnApplicationBootstrap {
       };
       this.currentReportData.push(successMessage);
     } catch (e) {
+      this.logger.error(`error in simulateTransaction: ${e.message}`);
+      if (
+        retryCount > 0 &&
+        e &&
+        e.message &&
+        e.message.includes('missing revert data')
+      ) {
+        this.logger.warn(
+          `Retrying simulation. Retries left: ${retryCount - 1}`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return this.simulateTransaction(
+          transactionData,
+          provider,
+          retryCount - 1,
+        );
+      }
+      // throw e;
       this.failedCount++;
       const errorMessage = {
         simulateTransaction: {
